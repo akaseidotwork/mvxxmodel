@@ -21,3 +21,11 @@ func (m MangaMeta) RelatedTables(yield func(any) bool) {
 		}
 	}
 }
+
+func (m MangaMeta) GetRelations(yield func(string)bool) {
+	for _, response := range []string{"Authors", "Circles","Parodies", "Genres", "Characters"} {
+		if !yield(response) {
+			return
+		}
+	}
+}
