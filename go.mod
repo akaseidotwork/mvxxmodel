@@ -1,3 +1,3 @@
-module github.com/akaseidotwork/mvxx_model
+module github.com/akaseidotwork/mvxxmodel
 
 go 1.25.4
