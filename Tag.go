@@ -1,9 +1,11 @@
 package mvxxmodel
 
 type Tag struct {
-	ID   int    `gorm:"primaryKey;autoIncrement;"`
-	URL  string `gorm:"unique"`
-	Name string `gorm:"unique"`
+	// 以下はRoughの際に利用する(omitemptyを付与しない)
+	ID   int    `gorm:"primaryKey;autoIncrement;" json:"id"`
+	Name string `gorm:"unique" json:"name"`
+
+	URL  string `gorm:"unique" json:"url,omitempty"`
 }
 
 type Author struct {
