@@ -8,10 +8,10 @@ type MangaMeta struct {
 	Time   int64
 
 	Authors    []Author    `gorm:"many2many:meta_to_author"`
-	Circles    []Circle    `gorm:"many2many:meta_to_author"`
-	Parodies   []Parody    `gorm:"many2many:meta_to_author"`
-	Genres     []Genre     `gorm:"many2many:meta_to_author"`
-	Characters []Character `gorm:"many2many:meta_to_author"`
+	Circles    []Circle    `gorm:"many2many:meta_to_circle"`
+	Parodies   []Parody    `gorm:"many2many:meta_to_parody"`
+	Genres     []Genre     `gorm:"many2many:meta_to_genre"`
+	Characters []Character `gorm:"many2many:meta_to_character"`
 }
 
 func (m MangaMeta) RelatedTables(yield func(any) bool) {
