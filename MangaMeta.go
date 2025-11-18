@@ -16,14 +16,6 @@ type MangaMeta struct {
 	Characters []Character `gorm:"many2many:meta_to_character" json:"characters,omitempty"`
 }
 
-func (m MangaMeta) RelatedTables(yield func(any) bool) {
-	for _, response := range []any{Author{}, Parody{}, Genre{}, Character{}, Circle{}} {
-		if !yield(response) {
-			return
-		}
-	}
-}
-
 func (m MangaMeta) GetRelations(yield func(string) bool) {
 	for _, response := range []string{"Authors", "Circles", "Parodies", "Genres", "Characters"} {
 		if !yield(response) {
