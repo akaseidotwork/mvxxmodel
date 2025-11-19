@@ -2,6 +2,7 @@ package mvxxmodel
 
 type HasIDTag interface {
 	GetID() int
+	GetTag() Tag
 }
 
 type Tag struct {
@@ -17,6 +18,10 @@ func (t Tag) GetID() int {
 	return t.ID
 }
 
+func (t Tag) GetTag() Tag {
+	return t
+}
+
 type Author struct {
 	Tag
 	Metas []MangaMeta `gorm:"many2many:meta_to_author;" json:"-"`
@@ -24,7 +29,7 @@ type Author struct {
 
 type Character struct {
 	Tag
-	Metas []MangaMeta `gorm:"many2many:meta_to_character; json:"-"`
+	Metas []MangaMeta `gorm:"many2many:meta_to_character;" json:"-"`
 }
 
 type Circle struct {

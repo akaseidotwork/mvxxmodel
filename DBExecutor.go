@@ -1,32 +1,31 @@
 package mvxxmodel
 
 import (
-	"fmt"
-
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 )
 
-type dbExector struct {
+type DBExecutor struct {
 	db *gorm.DB
 }
 
-func NewDBExector(file string) (dbExector, error) {
+func NewDBExector(file string) (DBExecutor, error) {
 	sqlDB := sqlite.Open(file)
 	db, err := gorm.Open(sqlDB, &gorm.Config{})
 	if err != nil {
-		return dbExector{}, err
+		return DBExecutor{}, err
 	}
 
-	err = db.AutoMigrate(&MangaMeta{}, &Author{}, &Parody{}, &Genre{}, &Character{}, &Circle{}, &MetaToAuthor{}, &MetaToCharacter{}, &MetaToCircle{}, &MetaToGenre{}, &MetaToParody{})
+	m := MangaMeta{}
+	err = db.AutoMigrate(append(append(m.GetIntermediateStructs(), m.GetRelatedStructs()...), &m)...)
 	if err != nil {
-		return dbExector{}, err
+		return DBExecutor{}, err
 	}
 
-	return dbExector{db: db}, nil
+	return DBExecutor{db: db}, nil
 }
 
-func (db dbExector) GetDetailFromID(id string) (MangaMeta, error) {
+func (db DBExecutor) GetDetailFromID(id string) (MangaMeta, error) {
 	tx := db.db
 	var m MangaMeta
 	for table := range m.GetRelations {
@@ -37,57 +36,89 @@ func (db dbExector) GetDetailFromID(id string) (MangaMeta, error) {
 	return m, tx.Error
 }
 
-func (db dbExector) GetRoughsFromQuery(q queryOfRough) ([]MangaMeta, error) {
+func (db DBExecutor) GetRoughsFromQuery(q QueryOfRough) ([]MangaMeta, error) {
 	tx := db.db
 	var result []MangaMeta
-	tx = tx.Limit(q.Size).Offset(q.Size * q.Index).Find(&result)
+	tx = tx.Order(q.Order.String()).Limit(q.Size).Offset(q.Size * q.Index).Find(&result)
 	return result, tx.Error
 }
 
-func (db dbExector) GetTagsFromQuery(q queryOfTag) ([]Tag, error) {
-	nameFinder := fmt.Sprintf("%s%s%s", "%", q.Query, "%")
-	var result []Tag
-	tx := db.db.Exec("SELECT id, name, works FROM % WHERE name LIKE % ASEC works OFFSET % LIMIT %", q.Table, nameFinder, q.Index*q.Size, q.Size).Scan(&result)
-	return result, tx.Error
+func (db DBExecutor) GetTagsFromQuery(q QueryOfTag) ([]Tag, error) {
+	switch q.Table {
+	case AuthorTable:
+		{
+			return getTagsAccordingToT[Author](db.db, q)
+		}
+	case GenreTable:
+		{
+			return getTagsAccordingToT[Genre](db.db, q)
+		}
+	case CharacterTable:
+		{
+			return getTagsAccordingToT[Character](db.db, q)
+		}
+	case ParodyTable:
+		{
+			return getTagsAccordingToT[Parody](db.db, q)
+		}
+	case CircleTable:
+		{
+			return getTagsAccordingToT[Circle](db.db, q)
+		}
+	}
+
+	return []Tag{}, ErrNoSuchTable
+
 }
 
-func (db dbExector) Insert(m MangaMeta) error {
-	tx := db.db.FirstOrCreate(&m)
+func (db DBExecutor) Insert(m MangaMeta) error {
+	tx := db.db.Statement.FirstOrCreate(&m)
 	if tx.Error != nil {
 		return tx.Error
 	}
-
-	tx = tx.Model(&Author{})
-	for a := range fromTablesToTag(m.Authors) {
-		if err := tx.Where("id = ?", a).Update("works", gorm.Expr("works + 1")).Error; err != nil {
-			return err
-		}
+	if err := afterCreate(db.db, m.Authors); err != nil {
+		return err
 	}
-	tx = tx.Model(&Parody{})
-	for a := range fromTablesToTag(m.Parodies) {
-		if err := tx.Where("id = ?", a).Update("works", gorm.Expr("works + 1")).Error; err != nil {
-			return err
-		}
+	if err := afterCreate(db.db, m.Circles); err != nil {
+		return err
 	}
-
-	tx = tx.Model(&Genre{})
-	for a := range fromTablesToTag(m.Genres) {
-		if err := tx.Where("id = ?", a).Update("works", gorm.Expr("works + 1")).Error; err != nil {
-			return err
-		}
+	if err := afterCreate(db.db, m.Genres); err != nil {
+		return err
+	}
+	if err := afterCreate(db.db, m.Characters); err != nil {
+		return err
+	}
+	if err := afterCreate(db.db, m.Parodies); err != nil {
+		return err
 	}
 
-	tx = tx.Model(&Character{})
-	for a := range fromTablesToTag(m.Characters) {
-		if err := tx.Where("id = ?", a).Update("works", gorm.Expr("works + 1")).Error; err != nil {
-			return err
-		}
+	return nil
+}
+
+func getTagsAccordingToT[T HasIDTag](db *gorm.DB, q QueryOfTag) ([]Tag, error) {
+	tx := db.Model(new(T))
+	precursors := new([]T)
+	tx = tx.Order("works asc").Offset(q.Index * q.Size).Limit(q.Size).Find(precursors)
+	if tx.Error != nil {
+		return []Tag{}, tx.Error
 	}
-	tx = tx.Model(&Circle{})
-	for a := range fromTablesToTag(m.Circles) {
-		if err := tx.Where("id = ?", a).Update("works", gorm.Expr("works + 1")).Error; err != nil {
+
+	result := []Tag{}
+	for _, precursor := range *precursors {
+		result = append(result, precursor.GetTag())
+	}
+
+	return result, nil
+}
+
+func afterCreate[T HasIDTag](db *gorm.DB, list []T) error {
+	tx := db.Model(new(T))
+	for a := range fromTablesToTag(list) {
+		err := tx.Where("id = ?", a).Update("works", gorm.Expr("works + 1")).Error
+		if err != nil {
 			return err
 		}
+
 	}
 
 	return nil

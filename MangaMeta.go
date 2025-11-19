@@ -23,3 +23,23 @@ func (m MangaMeta) GetRelations(yield func(string) bool) {
 		}
 	}
 }
+
+func (m MangaMeta) GetRelatedStructs() []any {
+	return []any{
+		&Author{},
+		&Circle{},
+		&Genre{},
+		&Character{},
+		&Parody{},
+	}
+}
+
+func (m MangaMeta) GetIntermediateStructs() []any {
+	return []any {
+		&MetaToAuthor{},
+		&MetaToCircle{},
+		&MetaToGenre{},
+		&MetaToCharacter{},
+		&MetaToParody{},
+	}
+}

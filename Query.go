@@ -1,12 +1,31 @@
 package mvxxmodel
 
+import "fmt"
+
 type OrderQuery struct {
 	value string
+	Asc   bool
+}
+
+func (oq OrderQuery) String() string {
+	direc := "asc"
+	if !oq.Asc {
+		direc = "desc"
+	}
+
+	return fmt.Sprintf("%s %s", oq.value, direc)
 }
 
 var (
-	OrderWorks = OrderQuery{value: "works"}
-	OrderTime  = OrderQuery{value: "time"}
+	// for tags
+	OrderWorks = OrderQuery{value: "works",
+		Asc: true}
+
+	// for works
+	OrderTime = OrderQuery{value: "time",
+		Asc: true}
+	OrderLike = OrderQuery{value: "likes",
+		Asc: true}
 )
 
 type QueryBase struct {
@@ -14,24 +33,23 @@ type QueryBase struct {
 	Index int
 }
 
-type queryOfRough struct {
+type QueryOfRough struct {
 	QueryBase
 	Order OrderQuery
 }
 
-func NewQueryOfRough() queryOfRough {
-	return queryOfRough{
+func NewQueryOfRough() QueryOfRough {
+	return QueryOfRough{
 		Order: OrderWorks,
 	}
 }
 
-type queryOfTag struct {
+type QueryOfTag struct {
 	QueryBase
-	Table string
+	Table Table
 	Query string
 }
 
-func NewQueryOfTag() queryOfTag {
-	return queryOfTag {}
+func NewQueryOfTag() QueryOfTag {
+	return QueryOfTag{}
 }
-
