@@ -29,8 +29,8 @@ var (
 )
 
 type QueryBase struct {
-	Size  int
-	Index int
+	Size  int `json:"size"`
+	Index int `json:"index"`
 }
 
 type QueryOfRough struct {
@@ -38,8 +38,9 @@ type QueryOfRough struct {
 	Order OrderQuery
 }
 
-func NewQueryOfRough() QueryOfRough {
+func NewQueryOfRough(qb QueryBase) QueryOfRough {
 	return QueryOfRough{
+		QueryBase: qb,
 		Order: OrderWorks,
 	}
 }
@@ -50,6 +51,6 @@ type QueryOfTag struct {
 	Query string
 }
 
-func NewQueryOfTag() QueryOfTag {
-	return QueryOfTag{}
+func NewQueryOfTag(qb QueryBase) QueryOfTag {
+	return QueryOfTag{QueryBase: qb}
 }
